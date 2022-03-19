@@ -11,9 +11,15 @@ public class Caveman_NPC : MonoBehaviour
     private Animator animator;
     private Bounds bounds;
     private float decisionTimeCount;
-    public float speed;
-    public Transform areaBounds;
-    public Vector2 decisionTime = new Vector2(1, 4);
+    
+    [SerializeField]
+    private float speed;
+    [SerializeField]
+    private Transform areaBounds;
+    [SerializeField]
+    private Transform player;
+    [SerializeField]
+    private Vector2 decisionTime = new Vector2(1, 4);
     
 
     // Start is called before the first frame update
@@ -24,6 +30,7 @@ public class Caveman_NPC : MonoBehaviour
         transform = GetComponent<Transform>();
         bounds = new Bounds(areaBounds.position, areaBounds.localScale);
         ChangeDirection();
+        animator.SetBool("isWalking", true);
     }
 
     // Update is called once per frame
@@ -33,9 +40,27 @@ public class Caveman_NPC : MonoBehaviour
     }
 
     private void Move() {
+        if (bounds.Contains(player.position)) {
+            if(!animator.GetBool("isCharging")) {
+                this.speed+=7;
+                animator.SetBool("isCharging", true);
+            }
+        } else  {
+            if(animator.GetBool("isCharging")) {
+                this.speed-=7;
+                animator.SetBool("isCharging", false); 
+            }
+        }
         Vector3 temp = transform.position + directionVector * speed * Time.deltaTime;
-        
-        if (bounds.Contains(temp) && decisionTimeCount > 0) {
+        if(animator.GetBool("isCharging")) {
+            temp = Vector3.MoveTowards(transform.position, player.position, speed * Time.deltaTime);
+            decisionTimeCount = 1;
+            Vector3 targetDirection = player.position - transform.position;
+            directionVector = Vector3.RotateTowards(transform.forward, targetDirection, 1, 1);
+            UpdateAnimation();
+        }
+
+        if (bounds.Contains(temp) && decisionTimeCount > 0) { 
            decisionTimeCount -= Time.deltaTime;
            rigidBody.MovePosition(temp);
         } else {
